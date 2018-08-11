@@ -1,11 +1,16 @@
 package narayan.awsonboarding.twstoaws;
 
+import java.io.IOException;
 import java.util.function.Function;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.aws.core.env.ResourceIdResolver;
 import org.springframework.cloud.function.adapter.aws.SpringBootRequestHandler;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.ResourceLoader;
+
+import com.amazonaws.services.s3.AmazonS3;
 
 /**
  * TWS to AWS OnBoarding POC
@@ -27,9 +32,10 @@ public class TwsToAwsApplication extends SpringBootRequestHandler<String, String
 	 * </pre>
 	 * 
 	 * @return
+	 * @throws IOException 
 	 */
 	@Bean
-	public Function<String, String> uppercase() {
+	public Function<String, String> uppercase(ResourceIdResolver idResolver, ResourceLoader resourceLoader, AmazonS3 amazonS3) throws IOException {
 		return req -> req.toUpperCase();
 	}
 
