@@ -1,5 +1,10 @@
 package narayan.awsonboarding.twstoaws.config;
 
+/**
+ * 
+ * @author narayana
+ *
+ */
 public class Alpha {
 
 	private Long id;

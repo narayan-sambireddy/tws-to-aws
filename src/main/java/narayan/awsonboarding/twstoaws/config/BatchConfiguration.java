@@ -1,25 +1,15 @@
 package narayan.awsonboarding.twstoaws.config;
 
-import java.util.Date;
 import java.util.List;
 
 import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.core.launch.support.SimpleJobLauncher;
-import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
-import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
-import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
@@ -27,6 +17,7 @@ import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.batch.repeat.RepeatStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ResourceLoader;
@@ -64,17 +55,19 @@ public class BatchConfiguration {
 
 	@Bean
 	@StepScope
-	public FlatFileItemReader<Alpha> fileReader(ResourceLoader resourceLoader) {
+	public FlatFileItemReader<Alpha> fileReader(ResourceLoader resourceLoader, 
+			@Value("#{jobParameters['bucketName']}") String bucketName, 
+			@Value("#{jobParameters['objectKey']}") String objectKey) {
 		return new FlatFileItemReader<Alpha>() {
 			{
 				setLinesToSkip(1);
-				setResource(resourceLoader.getResource("s3://s3-dynamo-demo/alpha.txt"));
+				setResource(resourceLoader.getResource("s3://"+ bucketName + "/" + objectKey));
 				setLineMapper(new DefaultLineMapper<Alpha>() {
 					{
 						setLineTokenizer(new DelimitedLineTokenizer() {
 							{
 								setDelimiter("|");
-								setNames(new String[] { "id", "name" });
+								setNames("id", "name");
 							}
 						});
 						setFieldSetMapper(new BeanWrapperFieldSetMapper<Alpha>() {
@@ -122,20 +115,23 @@ public class BatchConfiguration {
 				})
 				.build();
 	}
-
+	
+	/*//TO bypass JobExecutionAlreadyCompletedException during auto-launch of the batch job while startup.
 	@Bean
 	public SimpleJobLauncher jobLauncher(JobRepository jobRepository) {
-	SimpleJobLauncher simpleJobLauncher = new SimpleJobLauncher() {
-		@Override
-		public JobExecution run(Job job, JobParameters jobParameters) throws JobExecutionAlreadyRunningException,
-				JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {
-			jobParameters = new JobParametersBuilder(jobParameters).addDate("RUN-DATE", new Date())
-					.toJobParameters();
-			return super.run(job, jobParameters);
-		}
-	};
-	simpleJobLauncher.setJobRepository(jobRepository);
-	return simpleJobLauncher;
+		SimpleJobLauncher simpleJobLauncher = new SimpleJobLauncher() {
+			@Override
+			public JobExecution run(Job job, JobParameters jobParameters) throws JobExecutionAlreadyRunningException,
+					JobRestartException, JobInstanceAlreadyCompleteException, JobParametersInvalidException {
+				jobParameters = new JobParametersBuilder(jobParameters).addDate("RUN-DATE", new Date())
+						.toJobParameters();
+				return super.run(job, jobParameters);
+			}
+		};
+		
+		simpleJobLauncher.setJobRepository(jobRepository);
+		return simpleJobLauncher;
 	}
+	*/
 
 }
